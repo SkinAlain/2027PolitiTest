@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PolitiTest - Le Comparateur à 100 Questions</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --bg: #f1f5f9;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --text-light: #64748b;
+      --border: #e2e8f0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 15px;
+    }
+
+    .quiz-container {
+      background: var(--card-bg);
+      width: 100%;
+      max-width: 720px;
+      border-radius: 16px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      padding: 30px;
+      transition: all 0.3s ease;
+    }
+
+    /* Header & Progress */
+    .header { margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
+    
+    .meta-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .category-badge {
+      display: inline-block;
+      padding: 5px 14px;
+      background: #eff6ff;
+      color: var(--primary);
+      font-weight: 600;
+      font-size: 0.8rem;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .question-counter {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-light);
+      background: #f8fafc;
+      padding: 5px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .progress-bar-container { display: flex; align-items: center; gap: 10px; }
+
+    .progress-bar {
+      flex-grow: 1;
+      height: 8px;
+      background-color: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress {
+      height: 100%;
+      background-color: var(--primary);
+      width: 0%;
+      transition: width 0.3s ease-out;
+    }
+
+    /* Question */
+    .question-section { min-height: 250px; display: flex; flex-direction: column; justify-content: center; }
+
+    .question-text {
+      font-size: 1.35rem;
+      font-weight: 700;
+      line-height: 1.4;
+      margin-bottom: 30px;
+      color: var(--text);
+    }
+
+    /* Options */
+    .options-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 25px;
+    }
+
+    .btn-option {
+      padding: 16px 20px;
+      border: 2px solid var(--border);
+      background: #fff;
+      border-radius: 10px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: left;
+      color: var(--text);
+      position: relative;
+    }
+
+    .btn-option:hover {
+      background-color: #f8fafc;
+      border-color: #cbd5e1;
+      transform: translateY(-1px);
+    }
+
+    /* Contextual hover colors */
+    .btn-option[data-value="2"]:hover { border-color: #16a34a; background: #f0fdf4; color: #15803d; }
+    .btn-option[data-value="1"]:hover { border-color: #86efac; background: #f0fdf4; }
+    .btn-option[data-value="0"]:hover { border-color: #94a3b8; background: #f8fafc; }
+    .btn-option[data-value="-1"]:hover { border-color: #fca5a5; background: #fef2f2; }
+    .btn-option[data-value="-2"]:hover { border-color: #dc2626; background: #fef2f2; color: #b91c1c; }
+
+    /* Navigation */
+    .nav-controls {
+      display: flex;
+      justify-content: flex-start;
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px solid var(--border);
+    }
+
+    .btn-back {
+      padding: 10px 20px;
+      background: #f1f5f9;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-back:hover:not(:disabled) { background: #e2e8f0; }
+    .btn-back:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Results */
+    .result-card { text-align: center; }
+
+    .top-match {
+      background: #eff6ff;
+      border: 2px solid var(--primary);
+      padding: 25px;
+      border-radius: 12px;
+      margin-bottom: 25px;
+    }
+
+    .top-match span { color: var(--primary); font-weight: 600; font-size: 0.9rem; text-transform: uppercase; }
+    .top-match h2 { font-size: 2.2rem; color: var(--text); margin: 10px 0; font-weight: 800; }
+    .top-match p { font-size: 1.2rem; font-weight: 700; color: var(--primary); }
+
+    #scores-list { display: flex; flex-direction: column; gap: 10px; text-align: left; }
+
+    .party-result {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 20px;
+      border-radius: 10px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      transition: transform 0.2s;
+    }
+    
+    .party-result:hover { transform: translateX(5px); background: #f1f5f9; }
+
+    .party-name { font-weight: 600; font-size: 1rem; color: var(--text); }
+    .party-score-container { text-align: right; }
+    .party-score-bar { width: 100px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-top: 5px; }
+    .party-score-fill { height: 100%; background: var(--primary); border-radius: 3px; }
+    .party-score-text { font-weight: 700; color: var(--primary); font-size: 1.1rem; }
+
+    .btn-restart {
+      margin-top: 30px;
+      padding: 15px 30px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 1.1rem;
+      cursor: pointer;
+      width: 100%;
+      transition: background 0.2s;
+    }
+    .btn-restart:hover { background: var(--primary-hover); }
+
+    .hidden { display: none !important; }
+
+    /* Mobile optimization */
+    @media (max-width: 600px) {
+      .quiz-container { padding: 20px; }
+      .question-text { font-size: 1.15rem; min-height: auto; }
+      .btn-option { padding: 12px 15px; font-size: 0.95rem; }
+      .top-match h2 { font-size: 1.6rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="quiz-container">
+    <div id="quiz-screen">
+      <div class="header">
+        <div class="meta-info">
+          <span id="category" class="category-badge">Chargement...</span>
+          <span id="counter" class="question-counter">0 / 0</span>
+        </div>
+        <div class="progress-bar-container">
+          <div class="progress-bar">
+            <div id="progress" class="progress"></div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="question-section">
+        <div id="question" class="question-text">Préparation du test...</div>
+
+        <div class="options-grid">
+          <button class="btn-option" data-value="2" onclick="handleAnswer(2)">Tout à fait d'accord</button>
+          <button class="btn-option" data-value="1" onclick="handleAnswer(1)">Plutôt d'accord</button>
+          <button class="btn-option" data-value="0" onclick="handleAnswer(0)">Neutre / Indécis</button>
+          <button class="btn-option" data-value="-1" onclick="handleAnswer(-1)">Plutôt pas d'accord</button>
+          <button class="btn-option" data-value="-2" onclick="handleAnswer(-2)">Pas du tout d'accord</button>
+        </div>
+      </div>
+
+      <div class="nav-controls">
+        <button id="btn-back" class="btn-back" onclick="goBack()" disabled>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Question précédente
+        </button>
+      </div>
+    </div>
+
+    <div id="result-screen" class="result-card hidden">
+      <h1>Vos Résultats</h1>
+      <p style="margin: 10px 0 25px 0; color: var(--text-light); font-size: 1.1rem;">Voici votre affinité avec les principales formations politiques françaises :</p>
+      
+      <div class="top-match">
+        <span>Parti le plus proche :</span>
+        <h2 id="top-party-name">-</h2>
+        <p id="top-party-score">-</p>
+      </div>
+
+      <div id="scores-list"></div>
+
+      <button class="btn-restart" onclick="restartQuiz()">Refaire le test (100 questions)</button>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================================
+    // COLLEZ VOS CONSTANTES 'questions' ET 'parties' ICI
+    // ==========================================================
+        // 1. Questions du quiz
+// 1. Les 100 questions réparties par thématiques
+    const questions = [
+      // Économie & Pouvoir d'achat (1-15)
+      { id: 1, cat: "Économie", text: "Il faut revaloriser immédiatement le SMIC net à 1 600 €." },
+      { id: 2, cat: "Économie", text: "Une taxe exceptionnelle permanente doit être prélevée sur les superprofits des grandes entreprises." },
+      { id: 3, cat: "Économie", text: "La TVA sur les produits de première nécessité et l'énergie doit passer à 0 % ou 5,5 %." },
+      { id: 4, cat: "Économie", text: "Il faut supprimer la Contribution Sociale de Solidarité des Sociétés (C3S) pour alléger la fiscalité." },
+      { id: 5, cat: "Économie", text: "Il faut rétablir l'Impôt Sur la Fortune (ISF) sous une forme renforcée incluant le patrimoine financier." },
+      { id: 6, cat: "Économie", text: "L'État doit fixer un prix plafond pour les carburants et les denrées alimentaires de base." },
+      { id: 7, cat: "Économie", text: "Le prélèvement forfaitaire unique (Flat Tax de 30 %) sur les revenus du capital doit être supprimé." },
+      { id: 8, cat: "Économie", text: "La défiscalisation et la désocialisation des heures supplémentaires doivent être abrogées." },
+      { id: 9, cat: "Économie", text: "Les droits de succession doivent être exonérés jusqu'à 100 000 € en ligne directe." },
+      { id: 10, cat: "Économie", text: "L'État doit réduire les exonérations de cotisations patronales sur les salaires supérieurs à 1,6 SMIC." },
+      { id: 11, cat: "Économie", text: "Le versement du RSA doit être conditionné à 15 à 20 heures d'activité obligatoire par semaine." },
+      { id: 12, cat: "Économie", text: "Il faut instaurer une échelle d'écarts de salaires de 1 à 20 dans toutes les entreprises." },
+      { id: 13, cat: "Économie", text: "La rémunération des fonctionnaires doit intégrer une part plus importante de prime au mérite." },
+      { id: 14, cat: "Économie", text: "La taxe d'habitation doit être réinstaurée pour les 20 % des ménages les plus aisés." },
+      { id: 15, cat: "Économie", text: "L'État doit inciter financièrement les ménages au 'Made in France' par un chèque souveraineté." },
+
+      // Retraites, Travail & Services Publics (16-30)
+      { id: 16, cat: "Services Publics", text: "L'âge légal de départ à la retraite doit être ramené à 60 ans pour tous." },
+      { id: 17, cat: "Services Publics", text: "Il faut désindexer les pensions de retraite les plus élevées de l'inflation." },
+      { id: 18, cat: "Services Publics", text: "Le temps de travail hebdomadaire légal doit être réduit à 32 heures sans perte de salaire." },
+      { id: 19, cat: "Services Publics", text: "La durée maximale d'indemnisation du chômage doit être réduite." },
+      { id: 20, cat: "Services Publics", text: "Tous les régimes spéciaux de retraite (RATP, SNCF, EDF) doivent être réalignés sur le régime général." },
+      { id: 21, cat: "Services Publics", text: "Un plan d'urgence de réouverture de lits à l'hôpital public doit être financé en priorité." },
+      { id: 22, cat: "Services Publics", text: "Il faut généraliser les contrats de droit privé dans la fonction publique." },
+      { id: 23, cat: "Services Publics", text: "La prise en compte des critères de pénibilité dans le calcul des retraites doit être réintégrée." },
+      { id: 24, cat: "Services Publics", text: "L'installation des jeunes médecins généralistes doit être obligatoire dans les zones sous-dotées." },
+      { id: 25, cat: "Services Publics", text: "Les établissements scolaires publics doivent imposer le port d'un uniforme." },
+      { id: 26, cat: "Services Publics", text: "Le budget attribué aux écoles privées sous contrat doit être réduit au profit du public." },
+      { id: 27, cat: "Services Publics", text: "L'État doit renationaliser les autoroutes et les transports ferroviaires." },
+      { id: 28, cat: "Services Publics", text: "La réduction du déficit sous le seuil des 3 % du PIB doit être la priorité absolue." },
+      { id: 29, cat: "Services Publics", text: "Les tarifs réglementés de l'électricité et du gaz doivent être gelés par l'État." },
+      { id: 30, cat: "Services Publics", text: "Le gouvernement doit engager la suppression d'au moins 100 000 postes de fonctionnaires." },
+
+      // Immigration & Nationalité (31-45)
+      { id: 31, cat: "Immigration", text: "Le droit du sol pour l'acquisition de la nationalité française doit être entièrement supprimé." },
+      { id: 32, cat: "Immigration", text: "L'attribution des aides sociales et logements sociaux doit être réservée en priorité aux Français." },
+      { id: 33, cat: "Immigration", text: "Tous les travailleurs sans-papiers exerçant dans des métiers en tension doivent être régularisés." },
+      { id: 34, cat: "Immigration", text: "L'Aide Médicale d'État (AME) pour les étrangers en situation irrégulière doit être supprimée." },
+      { id: 35, cat: "Immigration", text: "Le Parlement doit voter chaque année des quotas d'immigration contraignants." },
+      { id: 36, cat: "Immigration", text: "Les conditions du regroupement familial doivent être fortement durcies." },
+      { id: 37, cat: "Immigration", text: "Les demandes d'asile doivent être déposées obligatoirement dans les ambassades à l'étranger." },
+      { id: 38, cat: "Immigration", text: "Toute personne étrangère condamnée à de la prison ferme doit être expulsée après sa peine." },
+      { id: 39, cat: "Immigration", text: "La France doit se retirer de Schengen pour rétablir les contrôles permanents aux frontières." },
+      { id: 40, cat: "Immigration", text: "Il faut faciliter la déchéance de nationalité pour les binationaux coupables de crimes graves." },
+      { id: 41, cat: "Immigration", text: "Le renouvellement du titre de séjour doit être conditionné à un examen d'intégration culturelle." },
+      { id: 42, cat: "Immigration", text: "La France doit accroître l'accueil des personnes fuyant les conséquences du dérèglement climatique." },
+      { id: 43, cat: "Immigration", text: "La hausse des frais d'inscription universitaire pour les étudiants hors UE doit être abrogée." },
+      { id: 44, cat: "Immigration", text: "La durée maximale de rétention administrative des clandestins doit être portée à 180 jours." },
+      { id: 45, cat: "Immigration", text: "Les sanctions financières contre les entreprises employant des clandestins doivent être multipliées par 5." },
+
+      // Sécurité & Justice (46-55)
+      { id: 46, cat: "Sécurité", text: "Les peines minimales obligatoires (peines planchers) doivent être rétablies pour les récidivistes." },
+      { id: 47, cat: "Sécurité", text: "La majorité pénale doit être abaissée à 16 ans pour les crimes et délits violents." },
+      { id: 48, cat: "Sécurité", text: "L'armement létal des policiers municipaux doit être obligatoire dans les communes > 10 000 hab." },
+      { id: 49, cat: "Sécurité", text: "Le cannabis doit être légalisé, encadré et taxé par l'État." },
+      { id: 50, cat: "Sécurité", text: "Un programme d'urgence de construction de 20 000 places de prison doit être exécuté." },
+      { id: 51, cat: "Sécurité", text: "L'aménagement de peine automatique doit être supprimé pour toute peine > 6 mois de prison ferme." },
+      { id: 52, cat: "Sécurité", text: "Un récépissé doit être délivré lors de chaque contrôle d'identité policier." },
+      { id: 53, cat: "Sécurité", text: "La perpétuité réelle incompressible doit être instaurée pour les terroristes." },
+      { id: 54, cat: "Sécurité", text: "Les peines encourues pour refus d'obtempérer doivent être immédiatement doublées." },
+      { id: 55, cat: "Sécurité", text: "Les allocations familiales des parents de mineurs récidivistes doivent pouvoir être suspendues." },
+
+      // Écologie & Énergie (56-70)
+      { id: 56, cat: "Écologie", text: "La France doit engager la construction d'au moins 14 nouveaux réacteurs nucléaires." },
+      { id: 57, cat: "Écologie", text: "Un moratoire immédiat doit être décrété sur tout nouveau projet d'éoliennes terrestres." },
+      { id: 58, cat: "Écologie", text: "Une taxe aux frontières de l'Europe doit frapper le contenu carbone des produits importés." },
+      { id: 59, cat: "Écologie", text: "Les Zones à Faibles Émissions (ZFE) interdisant les véhicules anciens doivent être supprimées." },
+      { id: 60, cat: "Écologie", text: "L'interdiction totale du glyphosate et des néonicotinoïdes doit être appliquée sans exception." },
+      { id: 61, cat: "Écologie", text: "Tous les projets de construction de nouvelles autoroutes doivent être abandonnés." },
+      { id: 62, cat: "Écologie", text: "Les vols en avion intérieur avec alternative en train de moins de 4 heures doivent être interdits." },
+      { id: 63, cat: "Écologie", text: "L'interdiction de louer des passoires thermiques (DPE F et G) doit être maintenue." },
+      { id: 64, cat: "Écologie", text: "La construction des réserves d'eau destinées à l'irrigation agricole ('méga-bassines') doit être stoppée." },
+      { id: 65, cat: "Écologie", text: "L'État doit imposer 50 % de produits bio français dans la restauration collective." },
+      { id: 66, cat: "Écologie", text: "Le carburant de l'aviation civile (kérosène) doit être taxé à la même hauteur que le carburant routier." },
+      { id: 67, cat: "Écologie", text: "Une pénalité financière lourde doit s'appliquer sur les marques de 'fast-fashion' ultra-polluantes." },
+      { id: 68, cat: "Écologie", text: "La chasse le dimanche et durant les vacances scolaires doit être strictement interdite." },
+      { id: 69, cat: "Écologie", text: "Le budget de la rénovation énergétique doit être triplé pour financer la gratuité chez les ménages modestes." },
+      { id: 70, cat: "Écologie", text: "Les spectacles de corrida et l'élevage intensif en batterie doivent être bannis." },
+
+      // Europe & International (71-80)
+      { id: 71, cat: "Europe", text: "La France doit refuser le Mercosur et dénoncer le CETA pour protéger ses agriculteurs." },
+      { id: 72, cat: "Europe", text: "Le droit constitutionnel français doit prévaloir en toutes circonstances sur le droit européen." },
+      { id: 73, cat: "Europe", text: "La France doit poursuivre et intensifier ses livraisons d'armes lourdes à l'Ukraine." },
+      { id: 74, cat: "Europe", text: "La France doit se retirer immédiatement du commandement intégré de l'OTAN." },
+      { id: 75, cat: "Europe", text: "La contribution nette de la France au budget de l'Union Européenne doit être réduite de moitié." },
+      { id: 76, cat: "Europe", text: "La France doit reconnaître immédiatement et unilatéralement l'État de Palestine." },
+      { id: 77, cat: "Europe", text: "La France doit mettre en commun une partie de son industrie d'armement pour bâtir une armée européenne." },
+      { id: 78, cat: "Europe", text: "La réglementation européenne sur les aides d'État doit être contournée pour subventionner nos usines." },
+      { id: 79, cat: "Europe", text: "L'entrée de nouveaux pays membres (Ukraine, Moldavie, Balkans) dans l'UE doit être bloquée." },
+      { id: 80, cat: "Europe", text: "La France doit retirer la totalité de ses bases militaires permanentes en Afrique." },
+
+      // Institutions & Démocratie (81-90)
+      { id: 81, cat: "Institutions", text: "L'élection des députés à l'Assemblée nationale doit se faire au scrutin proportionnel intégral." },
+      { id: 82, cat: "Institutions", text: "L'article 49 alinéa 3 de la Constitution (passage en force sans vote) doit être abrogé." },
+      { id: 83, cat: "Institutions", text: "Le Référendum d'Initiative Citoyenne (RIC) doit être instauré dans la Constitution." },
+      { id: 84, cat: "Institutions", text: "Le vote blanc doit être comptabilisé et pouvoir annuler une élection si la majorité est atteinte." },
+      { id: 85, cat: "Institutions", text: "Le cumul d'un mandat parlementaire avec un mandat d'exécutif local (maire) doit être réautorisé." },
+      { id: 86, cat: "Institutions", text: "Le Sénat doit être supprimé ou remplacé par une assemblée tirée au sort." },
+      { id: 87, cat: "Institutions", text: "Le mandat présidentiel doit être porté à un septennat non renouvelable au lieu du quinquennat." },
+      { id: 88, cat: "Institutions", text: "Le plafond de financement des campagnes électorales doit être fortement abaissé." },
+      { id: 89, cat: "Institutions", text: "Le droit de vote doit être ouvert dès l'âge de 16 ans pour toutes les élections." },
+      { id: 90, cat: "Institutions", text: "Un élu ne devrait pas pouvoir exercer plus de deux mandats successifs identiques." },
+
+      // Société, Culture & Laïcité (91-100)
+      { id: 91, cat: "Société", text: "La légalisation de l'aide active à mourir (euthanasie et suicide assisté) doit être votée." },
+      { id: 92, cat: "Société", text: "Le port du voile islamique dans l'espace public (hors lieux de culte) doit être interdit." },
+      { id: 93, cat: "Société", text: "La Gestation Pour Autrui (GPA) doit être autorisée et encadrée éthiquement en France." },
+      { id: 94, cat: "Société", text: "L'interdiction des signes religieux ostensibles doit être étendue aux universités publiques." },
+      { id: 95, cat: "Société", text: "L'audiovisuel public (France Télévisions, Radio France) doit être intégralement privatiser." },
+      { id: 96, cat: "Société", text: "Les actes de transition de genre pour les mineurs doivent être strictement interdits." },
+      { id: 97, cat: "Société", text: "Deux jours fériés catholiques doivent être remplacés par des fêtes laïques ou autres confessions." },
+      { id: 98, cat: "Société", text: "Les subventions publiques culturelles doivent être conditionnées à un critère de neutralité politique." },
+      { id: 99, cat: "Société", text: "La PMA doit être prise en charge par la Sécurité sociale sans limite d'âge." },
+      { id: 100, cat: "Société", text: "L'accès aux réseaux sociaux doit être formellement interdit à tous les mineurs de moins de 15 ans." }
+    ];
+
+    // 2. Positions théoriques des 12 partis (-2 à +2) pour CHACUNE des 100 questions
+    const parties = [
+      {
+        name: "Lutte Ouvrière (LO)",
+        scores: [
+          2, 2, 2,-2, 2, 2, 2, 2, 2, 2,-2, 2,-2, 2, 0, // 1-15
+          2,-2, 2,-2,-2, 2,-2, 2, 0,-2, 2, 2,-2, 2,-2, // 16-30
+         -2,-2, 2,-2,-2,-2,-2,-2,-2,-2,-2, 2, 2,-2, 2, // 31-45
+         -2,-2,-2, 2,-2,-2, 2,-2,-2,-2,                // 46-55
+         -2,-2, 2,-2, 2, 2, 2,-2, 2, 2, 2, 2,-2, 2, 2, // 56-70
+          2,-2,-2,-2,-2, 2,-2, 2,-2, 2,                // 71-80
+          2, 2, 2, 2,-2, 2,-2,-2, 2, 2,                // 81-90
+          2,-2,-2,-2,-2,-2, 0,-2, 2,-2                 // 91-100
+        ]
+      },
+      {
+        name: "Nouveau Parti Anticapitaliste (NPA)",
+        scores: [
+          2, 2, 2,-2, 2, 2, 2, 2, 2, 2,-2, 2,-2, 2, 0,
+          2,-2, 2,-2,-2, 2,-2, 2, 0,-2, 2, 2,-2, 2,-2,
+         -2,-2, 2,-2,-2,-2,-2,-2,-2,-2,-2, 2, 2,-2, 2,
+         -2,-2,-2, 2,-2,-2, 2,-2,-2,-2,
+         -2,-2, 2,-2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+          2,-2,-2,-2,-2, 2,-2, 2,-2, 2,
+          2, 2, 2, 2,-2, 2,-2,-2, 2, 2,
+          2,-2, 2,-2,-2,-2, 2,-2, 2,-2
+        ]
+      },
+      {
+        name: "La France Insoumise (LFI)",
+        scores: [
+          2, 2, 2,-2, 2, 2, 2, 2, 2, 2,-2, 2,-1, 2,-1,
+          2,-2, 2,-2,-2, 2,-2, 2, 1,-2, 2, 2,-2, 2,-2,
+         -2,-2, 2,-2,-2,-2,-2,-2,-2,-2,-2, 2, 2,-2, 2,
+         -2,-2,-2, 2,-2,-2, 2,-2,-2,-2,
+         -2,-2, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+          2, 1,-1,-2,-1, 2,-2, 2,-2, 2,
+          2, 2, 2, 2,-2, 1,-2, 2, 2, 2,
+          2,-2, 1,-2,-2,-2, 1,-2, 2,-1
+        ]
+      },
+      {
+        name: "Parti Communiste Français (PCF)",
+        scores: [
+          2, 2, 2,-2, 2, 2, 2, 2, 1, 2,-2, 2,-1, 1, 1,
+          2,-2, 1,-2,-2, 2,-2, 2, 2,-2, 2, 2,-2, 2,-2,
+         -2,-2, 2,-2,-2,-2,-2,-2,-2,-2,-2, 1, 2,-2, 2,
+         -1,-1,-1, 1,-1,-1, 1,-2, 0,-1,
+          2,-2, 2, 1, 2, 1, 1, 1, 1, 2, 2, 2, 1, 2, 1,
+          2, 1,-1,-2,-1, 2,-2, 2,-1, 1,
+          2, 2, 2, 2,-2, 0,-2, 2, 1, 2,
+          2,-2, 0,-2,-2,-1, 0,-2, 2,-1
+        ]
+      },
+      {
+        name: "Les Écologistes (EELV)",
+        scores: [
+          2, 2, 2,-2, 2, 1, 2, 2, 1, 2,-2, 1,-2, 1,-1,
+          2,-2, 1,-2,-2, 2,-2, 2, 2,-2, 2, 1,-2, 2,-2,
+         -2,-2, 2,-2,-2,-2,-2,-2,-2,-2,-2, 2, 2,-2, 1,
+         -2,-2,-2, 2,-2,-2, 2,-2,-2,-2,
+         -2,-2, 2,-1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+          2,-2, 1,-2,-2, 2, 1, 2,-2, 1,
+          2, 2, 2, 2,-2, 1,-2, 2, 2, 2,
+          2,-2, 1,-2,-2,-2, 1,-2, 2,-1
+        ]
+      },
+      {
+        name: "Parti Socialiste / Place Publique (PS)",
+        scores: [
+          1, 2, 1,-1, 2, 0, 1, 1, 1, 1,-2, 0,-1, 1, 0,
+          1,-1, 0,-1,-1, 2,-1, 1, 2,-2, 1, 0,-1, 1,-1,
+         -2,-2, 1,-2,-1,-1,-1,-2,-2,-2,-1, 1, 1,-1, 1,
+         -1,-1,-1, 0,-1,-1, 1,-2,-1,-1,
+          0,-2, 2,-1, 1, 0, 1, 2, 0, 2, 2, 2, 1, 2, 1,
+          1,-2, 2,-2,-1, 2, 1, 1,-2, 0,
+          1, 1, 1, 1,-1, 0,-1, 1, 0, 1,
+          2,-2, 0,-1,-2,-1, 0,-1, 1, 0
+        ]
+      },
+      {
+        name: "MoDem / Centre",
+        scores: [
+         -1,-1, 0, 1,-1,-1,-1,-1, 0,-1, 1,-1, 1,-1, 0,
+         -2, 1,-2, 1, 1,-1, 1,-1,-1, 0,-1,-1, 1,-1, 1,
+         -2,-1,-1,-1, 1, 1, 0,-1,-2,-1, 1,-1,-1, 1, 0,
+          0, 1, 0,-1, 1, 0,-1,-1, 1, 1,
+          2,-1, 1,-2,-1,-2,-1,-1,-1, 1, 0, 0,-1,-1,-1,
+         -1,-2, 2,-2,-1,-1, 2,-1,-1,-1,
+          1, 0, 0, 0, 0, 0,-1,-1,-1, 0,
+          1,-1, 0, 0,-1,-1, 0,-1, 0, 1
+        ]
+      },
+      {
+        name: "Renaissance (Ensemble)",
+        scores: [
+         -1,-2,-1, 2,-2,-2,-1,-1,-1,-1, 2,-2, 2,-2, 1,
+         -2, 1,-2, 2, 2,-1, 2,-2,-1, 1,-2,-2, 2,-2, 2,
+         -1,-1,-2,-1, 1, 1, 1,-1,-2,-1, 1,-2,-2, 1, 1,
+          1, 1, 1,-1, 2, 1,-1,-1, 1, 1,
+          2,-1, 2,-2,-2,-2,-1,-1,-2, 1, 0, 1,-1,-1,-1,
+         -1,-2, 2,-2,-2,-1, 2,-1,-1,-1,
+          0,-2, 0,-1, 0, 0, 0,-1,-1, 0,
+          2,-1, 0,-1,-1,-1, 0,-1,-1, 1
+        ]
+      },
+      {
+        name: "Horizons",
+        scores: [
+         -2,-2,-1, 2,-2,-2,-1,-1,-1,-1, 2,-2, 2,-2, 1,
+         -2, 1,-2, 2, 2,-1, 2,-2,-2, 1,-2,-2, 2,-2, 2,
+          0, 1,-2, 1, 2, 2, 1, 1,-1, 1, 1,-2,-2, 2, 1,
+          2, 1, 1,-1, 2, 2,-1,-1, 2, 2,
+          2, 1, 1,-1,-2,-2,-1,-2,-2, 0, 0, 0,-1,-1,-1,
+         -1,-1, 2,-2,-1,-1, 1,-1,-1,-1,
+          0,-2, 0,-1, 1, 0, 1,-1,-1, 0,
+          1, 0, 0, 1,-1, 1, 0,-1,-1, 1
+        ]
+      },
+      {
+        name: "Droite Républicaine (DR/LR)",
+        scores: [
+         -2,-2,-1, 2,-2,-2,-1,-2, 2,-2, 2,-2, 2,-2, 1,
+         -2, 1,-2, 2, 2,-2, 2,-2,-2, 2,-2,-2, 2,-2, 2,
+          1, 2,-2, 2, 2, 2, 2, 2, 1, 2, 2,-2,-2, 2, 2,
+          2, 2, 2,-2, 2, 2,-2, 1, 2, 2,
+          2, 2,-1, 1,-2,-2,-1,-2,-2,-1,-1,-1,-1,-1,-1,
+         -1, 1, 1, 1, 1,-1, 1, 1, 1,-1,
+         -1,-2, 0,-1, 2, 0, 1,-1,-2,-1,
+          1, 1,-1, 1,-1, 2, 0, 1,-2, 2
+        ]
+      },
+      {
+        name: "Rassemblement National (RN)",
+        scores: [
+          1,-1, 2,-1, 1, 2,-1, 0, 2, 1, 2,-1,-1,-2, 2,
+          1,-1,-1, 1, 1, 1,-1, 1, 1, 1,-1, 1,-1, 2, 0,
+          2, 2,-2, 2, 2, 2, 2, 2, 2, 2, 2,-2,-2, 2, 2,
+          2, 2, 2,-2, 2, 2,-2, 2, 2, 2,
+          2, 2,-1, 2,-2,-2,-1, 1,-2,-1,-1,-1,-1,-1,-1,
+          2, 2,-1, 1, 2,-1,-1, 2, 2,-1,
+          2,-2, 2, 1, 2,-1, 0,-1,-2,-1,
+         -1, 2,-1, 2, 1, 2,-1, 1,-2, 2
+        ]
+      },
+      {
+        name: "Reconquête (REC)",
+        scores: [
+         -2,-2, 1, 1,-1, 1,-1,-2, 2,-2, 2,-2, 0,-2, 2,
+         -1, 1,-2, 2, 2,-2, 2,-2,-2, 2,-2,-1, 1, 1, 1,
+          2, 2,-2, 2, 2, 2, 2, 2, 2, 2, 2,-2,-2, 2, 2,
+          2, 2, 2,-2, 2, 2,-2, 2, 2, 2,
+          2, 2,-2, 2,-2,-2,-2, 2,-2,-2,-2,-2,-1,-2,-2,
+          2, 2,-2, 1, 2,-2,-1, 2, 2,-1,
+          1,-2, 2, 1, 2,-1, 1,-1,-2,-1,
+         -1, 2,-2, 2, 1, 2,-1, 1,-2, 2
+        ]
+      }
+    ];
+    // (Le code ci-dessous suppose que les constantes sont présentes)
+
+    let currentQuestionIndex = 0;
+    let userAnswers = []; // Historique des réponses pour permettre le retour en arrière
+
+    // Initialisation
+    function initQuiz() {
+      if (typeof questions === 'undefined' || typeof parties === 'undefined') {
+        document.getElementById("question").innerHTML = "<span style='color:red'>Erreur : Les données du quiz (questions/parties) manquent dans le code.</span>";
+        return;
+      }
+      currentQuestionIndex = 0;
+      userAnswers = [];
+      document.getElementById("result-screen").classList.add("hidden");
+      document.getElementById("quiz-screen").classList.remove("hidden");
+      updateUI();
+    }
+
+    // Mise à jour de l'interface (question, compteur, barre, bouton retour)
+    function updateUI() {
+      const q = questions[currentQuestionIndex];
+      const totalQ = questions.length;
+
+      // Question et Catégorie
+      document.getElementById("category").innerText = q.cat;
+      document.getElementById("question").innerText = q.text;
+      
+      // Compteur (ex: 1 / 100)
+      document.getElementById("counter").innerText = `${currentQuestionIndex + 1} / ${totalQ}`;
+
+      // Barre de progression
+      const progressPercent = ((currentQuestionIndex) / totalQ) * 100;
+      document.getElementById("progress").style.width = `${progressPercent}%`;
+
+      // Gestion du bouton retour
+      const backBtn = document.getElementById("btn-back");
+      backBtn.disabled = (currentQuestionIndex === 0);
+    }
+
+    // Gestion du clic sur une réponse
+    function handleAnswer(value) {
+      // Stocker la réponse dans l'historique
+      userAnswers[currentQuestionIndex] = value;
+      
+      // Passer à la question suivante
+      currentQuestionIndex++;
+
+      if (currentQuestionIndex < questions.length) {
+        updateUI();
+        // Scroll automatique vers le haut de la carte pour les mobiles
+        window.scrollTo(0, 0); 
+      } else {
+        showResults();
+      }
+    }
+
+    // Revenir à la question précédente
+    function goBack() {
+      if (currentQuestionIndex > 0) {
+        currentQuestionIndex--;
+        updateUI();
+      }
+    }
+
+    // Calcul des proximités (Distance Euclidienne) et affichage
+    function showResults() {
+      document.getElementById("quiz-screen").classList.add("hidden");
+      document.getElementById("result-screen").classList.remove("hidden");
+      window.scrollTo(0, 0);
+
+      const totalQuestions = questions.length;
+      const maxDistancePerQuestion = 4; // Écart max: |2 - (-2)|
+
+      const results = parties.map(party => {
+        let totalDistance = 0;
+
+        // On compare l'historique des réponses de l'utilisateur aux scores du parti
+        userAnswers.forEach((ans, index) => {
+          const partyAns = party.scores[index];
+          totalDistance += Math.abs(ans - partyAns);
+        });
+
+        const maxPossibleDistance = totalQuestions * maxDistancePerQuestion;
+        // Similarité = (1 - distance_relative) * 100
+        const matchPercentage = Math.round((1 - (totalDistance / maxPossibleDistance)) * 100);
+
+        return { name: party.name, score: matchPercentage };
+      });
+
+      // Tri par affinité décroissante
+      results.sort((a, b) => b.score - a.score);
+
+      // Affichage du vainqueur
+      document.getElementById("top-party-name").innerText = results[0].name;
+      document.getElementById("top-party-score").innerText = `${results[0].score}% de concordance`;
+
+      // Affichage de la liste complète
+      const listContainer = document.getElementById("scores-list");
+      listContainer.innerHTML = "";
+
+      results.slice(1).forEach(res => {
+        const div = document.createElement("div");
+        div.className = "party-result";
+        div.innerHTML = `
+          <span class="party-name">${res.name}</span>
+          <div class="party-score-container">
+            <span class="party-score-text">${res.score}%</span>
+            <div class="party-score-bar">
+              <div class="party-score-fill" style="width: ${res.score}%"></div>
+            </div>
+          </div>
+        `;
+        listContainer.appendChild(div);
+      });
+    }
+
+    function restartQuiz() {
+      initQuiz();
+    }
+
+    // Démarrage automatique
+    window.onload = initQuiz;
+  </script>
+</body>
+</html>
